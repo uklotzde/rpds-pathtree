@@ -1,13 +1,13 @@
-# SPDX-FileCopyrightText: The im-pathtree authors
+# SPDX-FileCopyrightText: The rpds-pathtree authors
 # SPDX-License-Identifier: MPL-2.0
 
 [package]
-name = "im-pathtree"
+name = "rpds-pathtree"
 description = "Immutable, path-addressable tree data structure"
-version = "0.0.22"
+version = "0.0.23"
 license = "MPL-2.0"
 readme = "README.md"
-repository = "https://github.com/uklotzde/im-pathtree"
+repository = "https://github.com/uklotzde/rpds-pathtree"
 categories = ["data-structures"]
 keywords = ["immutable", "tree", "path"]
 edition = "2021"
@@ -18,8 +18,8 @@ derive_more = "0.99.17"
 log = "0.4.20"
 thiserror = "1.0.50"
 
-im = { version = "15.1.0", optional = true }
+rpds = "1.1.0"
 
 [features]
-"default" = ["im"]
-"im" = ["dep:im"]
+"default" = []
+"sync" = []

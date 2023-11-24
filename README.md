@@ -1,16 +1,22 @@
-<!-- SPDX-FileCopyrightText: The im-pathtree authors -->
+<!-- SPDX-FileCopyrightText: The rpds-pathtree authors -->
 <!-- SPDX-License-Identifier: MPL-2.0 -->
 
-# im-pathtree
+# rpds-pathtree
 
-[![Crates.io](https://img.shields.io/crates/v/im-pathtree.svg)](https://crates.io/crates/im-pathtree)
-[![Docs.rs](https://docs.rs/im-pathtree/badge.svg)](https://docs.rs/im-pathtree)
-[![Deps.rs](https://deps.rs/repo/github/uklotzde/im-pathtree/status.svg)](https://deps.rs/repo/github/uklotzde/im-pathtree)
-[![Security audit](https://github.com/uklotzde/im-pathtree/actions/workflows/security-audit.yaml/badge.svg)](https://github.com/uklotzde/im-pathtree/actions/workflows/security-audit.yaml)
-[![Continuous integration](https://github.com/uklotzde/im-pathtree/actions/workflows/continuous-integration.yaml/badge.svg)](https://github.com/uklotzde/im-pathtree/actions/workflows/continuous-integration.yaml)
+[![Crates.io](https://img.shields.io/crates/v/rpds-pathtree.svg)](https://crates.io/crates/rpds-pathtree)
+[![Docs.rs](https://docs.rs/rpds-pathtree/badge.svg)](https://docs.rs/rpds-pathtree)
+[![Deps.rs](https://deps.rs/repo/github/uklotzde/rpds-pathtree/status.svg)](https://deps.rs/repo/github/uklotzde/rpds-pathtree)
+[![Security audit](https://github.com/uklotzde/rpds-pathtree/actions/workflows/security-audit.yaml/badge.svg)](https://github.com/uklotzde/rpds-pathtree/actions/workflows/security-audit.yaml)
+[![Continuous integration](https://github.com/uklotzde/rpds-pathtree/actions/workflows/continuous-integration.yaml/badge.svg)](https://github.com/uklotzde/rpds-pathtree/actions/workflows/continuous-integration.yaml)
 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL_2.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
 
-Immutable, path-addressable tree data structure.
+Immutable (persistent), path-addressable tree data structure.
+
+Based on the [`rpds`](https://crates.io/crates/rpds) crate.
+
+## Feature Flags
+
+Thread-safety could be enabled on demand with the `"sync"` feature.
 
 ## License
 

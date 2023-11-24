@@ -1,9 +1,9 @@
-// SPDX-FileCopyrightText: The im-pathtree authors
+// SPDX-FileCopyrightText: The rpds-pathtree authors
 // SPDX-License-Identifier: MPL-2.0
 
 use std::borrow::Borrow as _;
 
-use crate::{HalfEdgeRef, HashMap, NodeId, PathTree, PathTreeTypes};
+use crate::{new_hash_map, HalfEdgeRef, HashMap, NodeId, PathTree, PathTreeTypes};
 
 #[derive(Debug, Clone)]
 pub enum NodeValue<T: PathTreeTypes> {
@@ -121,7 +121,7 @@ where
     /// Construct an empty inner node with no children
     pub fn new(value: <T as PathTreeTypes>::InnerValue) -> Self {
         Self {
-            children: HashMap::new(),
+            children: new_hash_map(),
             value,
         }
     }

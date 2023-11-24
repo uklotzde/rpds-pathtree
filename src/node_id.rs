@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: The im-pathtree authors
+// SPDX-FileCopyrightText: The rpds-pathtree authors
 // SPDX-License-Identifier: MPL-2.0
 
 use std::{
@@ -29,7 +29,7 @@ impl NodeId {
     /// tree or not.
     ///
     /// ```
-    /// # use im_pathtree::NodeId;
+    /// # use rpds_pathtree::NodeId;
     /// let foo_id = NodeId::new();
     /// let bar_id = NodeId::new();
     /// assert_ne!(foo_id, bar_id);

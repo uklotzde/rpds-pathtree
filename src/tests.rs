@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: The im-pathtree authors
+// SPDX-FileCopyrightText: The rpds-pathtree authors
 // SPDX-License-Identifier: MPL-2.0
 
 use std::borrow::Cow;
@@ -12,7 +12,7 @@ struct SlashPath<'a>(Cow<'a, str>);
 impl SlashPath<'_> {
     const PATH_SEPARATOR: char = '/';
 
-    const PATH_SEPARATOR_STR: &str = "/";
+    const PATH_SEPARATOR_STR: &'static str = "/";
 
     const ROOT: Self = Self(Cow::Borrowed(Self::PATH_SEPARATOR_STR));
 
@@ -111,12 +111,14 @@ type PathTree = crate::PathTree<PathTreeTypes>;
 type NodeValue = crate::NodeValue<PathTreeTypes>;
 
 // <https://github.com/rust-lang/api-guidelines/issues/223#issuecomment-683346783>
+#[cfg(feature = "sync")]
 const _: () = {
     const fn assert_send<T: Send>() {}
     let _ = assert_send::<PathTree>;
 };
 
 // <https://github.com/rust-lang/api-guidelines/issues/223#issuecomment-683346783>
+#[cfg(feature = "sync")]
 const _: () = {
     const fn assert_sync<T: Sync>() {}
     let _ = assert_sync::<PathTree>;

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: The im-pathtree authors
+// SPDX-FileCopyrightText: The rpds-pathtree authors
 // SPDX-License-Identifier: MPL-2.0
 
 use std::{borrow::Borrow, fmt, marker::PhantomData, num::NonZeroUsize, sync::Arc};
@@ -6,8 +6,8 @@ use std::{borrow::Borrow, fmt, marker::PhantomData, num::NonZeroUsize, sync::Arc
 use thiserror::Error;
 
 use crate::{
-    HalfEdge, HalfEdgeRef, HalfEdgeTreeNodeRef, HashMap, InnerNode, LeafNode, Node, NodeId,
-    NodeValue, PathSegment, PathSegmentRef, RootPath, SegmentedPath as _,
+    new_hash_map, HalfEdge, HalfEdgeRef, HalfEdgeTreeNodeRef, HashMap, InnerNode, LeafNode, Node,
+    NodeId, NodeValue, PathSegment, PathSegmentRef, RootPath, SegmentedPath as _,
 };
 
 /// Type system for [`PathTree`].
@@ -135,8 +135,8 @@ impl<T: PathTreeTypes> PathTree<T> {
             parent: None,
             node: root_node,
         };
-        let mut nodes = HashMap::new();
-        nodes.insert(root_node_id, Arc::new(root_node));
+        let mut nodes = new_hash_map();
+        nodes.insert_mut(root_node_id, Arc::new(root_node));
         Self {
             root_node_id,
             nodes,
@@ -325,24 +325,18 @@ impl<T: PathTreeTypes> PathTree<T> {
                 );
                 let child_node = Arc::new(child_node);
                 let new_parent_node = Arc::clone(&child_node);
-                let old_child_node = self.nodes.insert(child_node.id, child_node);
-                debug_assert!(old_child_node.is_none());
+                self.nodes.insert_mut(child_node.id, child_node);
                 let mut inner_node = inner_node.clone();
-                let old_child_node_id = inner_node
+                inner_node
                     .children
-                    .insert(path_segment.to_owned(), child_node_id);
-                debug_assert!(old_child_node_id.is_none());
+                    .insert_mut(path_segment.to_owned(), child_node_id);
                 // Replace the parent node with the modified one
                 let parent_node = TreeNode {
                     id: next_parent_node.id,
                     parent: next_parent_node.parent.clone(),
                     node: inner_node.into(),
                 };
-                let old_parent_node = self.nodes.insert(parent_node_id, Arc::new(parent_node));
-                log::debug!(
-                    "Updated parent node {old_parent_node:?} to {new_parent_node:?}",
-                    old_parent_node = old_parent_node.expect("old parent exists")
-                );
+                self.nodes.insert_mut(parent_node_id, Arc::new(parent_node));
                 next_parent_node = new_parent_node;
             }
             debug_assert_eq!(
@@ -408,14 +402,8 @@ impl<T: PathTreeTypes> PathTree<T> {
                 .try_clone_update_value(new_value)
                 .map_err(InsertOrUpdateNodeValueError::ValueTypeMismatch)?;
             let new_root_node = Arc::new(new_root_node);
-            let old_root_node = self
-                .nodes
-                .insert(new_root_node.id, Arc::clone(&new_root_node));
-            log::debug!(
-                "Updated root node {old_root_node:?} to {new_root_node:?}",
-                old_root_node = old_root_node.as_deref(),
-                new_root_node = *new_root_node,
-            );
+            self.nodes
+                .insert_mut(new_root_node.id, Arc::clone(&new_root_node));
             return Ok(ParentChildTreeNode {
                 parent_node: None,
                 child_node: new_root_node,
@@ -477,21 +465,15 @@ impl<T: PathTreeTypes> PathTree<T> {
         };
         let child_node_id = new_child_node.id;
         let new_child_node = Arc::new(new_child_node);
-        let old_child_node = self
-            .nodes
-            .insert(child_node_id, Arc::clone(&new_child_node));
-        log::debug!(
-            "Updated child node {old_child_node:?} to {new_child_node:?}",
-            old_child_node = old_child_node.as_deref(),
-            new_child_node = *new_child_node,
-        );
+        self.nodes
+            .insert_mut(child_node_id, Arc::clone(&new_child_node));
         let mut inner_node = inner_node.clone();
         if let Some(child_node_id_mut) = inner_node.children.get_mut(path_segment) {
             *child_node_id_mut = child_node_id;
         } else {
             inner_node
                 .children
-                .insert(path_segment.to_owned(), child_node_id);
+                .insert_mut(path_segment.to_owned(), child_node_id);
         }
         let parent_node = TreeNode {
             id: parent_node.id,
@@ -500,15 +482,8 @@ impl<T: PathTreeTypes> PathTree<T> {
         };
         let parent_node_id = parent_node.id;
         let new_parent_node = Arc::new(parent_node);
-        let old_parent_node = self
-            .nodes
-            .insert(parent_node_id, Arc::clone(&new_parent_node));
-        debug_assert!(old_parent_node.is_some());
-        log::debug!(
-            "Updated parent node {old_parent_node:?} to {new_parent_node:?}",
-            old_parent_node = old_parent_node.as_deref(),
-            new_parent_node = *new_parent_node,
-        );
+        self.nodes
+            .insert_mut(parent_node_id, Arc::clone(&new_parent_node));
         Ok(ParentChildTreeNode {
             parent_node: Some(new_parent_node),
             child_node: new_child_node,
@@ -553,8 +528,7 @@ impl<T: PathTreeTypes> PathTree<T> {
                 unreachable!();
             };
             let mut inner_node = inner_node.clone();
-            let removed_id = inner_node.children.remove(path_segment_to_parent);
-            debug_assert_eq!(removed_id, Some(node_id));
+            inner_node.children.remove_mut(path_segment_to_parent);
             TreeNode {
                 id: parent_node.id,
                 parent: parent_node.parent.clone(),
@@ -563,17 +537,12 @@ impl<T: PathTreeTypes> PathTree<T> {
         };
         let parent_node_id = new_parent_node.id;
         let new_parent_node = Arc::new(new_parent_node);
-        let old_parent_node = self
-            .nodes
-            .insert(parent_node_id, Arc::clone(&new_parent_node));
-        debug_assert!(old_parent_node.is_some());
-        log::debug!(
-            "Updated parent node {old_parent_node:?} to {new_parent_node:?}",
-            new_parent_node = self.get_node(parent_node_id)
-        );
-        let node = self.nodes.remove(&node_id).expect("node exists");
+        self.nodes
+            .insert_mut(parent_node_id, Arc::clone(&new_parent_node));
+        let node = Arc::clone(self.nodes.get(&node_id).expect("node exists"));
+        self.nodes.remove_mut(&node_id);
         for node_id in &descendant_node_ids {
-            self.nodes.remove(node_id);
+            self.nodes.remove_mut(node_id);
         }
         // The tree is now in a consistent state again.
         let node_count_after = self.node_count();
@@ -621,7 +590,7 @@ impl<T: PathTreeTypes> PathTree<T> {
     /// Total number of nodes in the tree.
     #[must_use]
     pub fn node_count(&self) -> usize {
-        let node_count = self.nodes.len();
+        let node_count = self.nodes.size();
         // Verify invariants
         debug_assert_eq!(
             node_count,
@@ -749,8 +718,7 @@ fn try_replace_leaf_with_inner_node<T: PathTreeTypes>(
         leaf_node = *node
     );
     let inner_node = Arc::new(inner_node);
-    let replaced_leaf_node = nodes.insert(inner_node.id, Arc::clone(&inner_node));
-    debug_assert!(replaced_leaf_node.is_some());
+    nodes.insert_mut(inner_node.id, Arc::clone(&inner_node));
     Ok(inner_node)
 }
 
