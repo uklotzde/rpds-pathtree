@@ -5,6 +5,8 @@ use std::borrow::Borrow as _;
 
 use crate::{new_hash_map, HalfEdgeRef, HashMap, NodeId, PathTree, PathTreeTypes};
 
+const DESCENDANTS_ITER_STACK_CAPACITY: usize = 1024;
+
 #[derive(Debug, Clone)]
 pub enum NodeValue<T: PathTreeTypes> {
     Inner(T::InnerValue),
@@ -86,13 +88,10 @@ where
     ///
     /// The ordering of nodes is undefined and an implementation detail. Only parent
     /// nodes are guaranteed to be visited before their children.
-    pub fn descendants<'a>(
-        &'a self,
-        tree: &'a PathTree<T>,
-    ) -> Box<dyn Iterator<Item = HalfEdgeRef<'a, T>> + 'a> {
+    pub fn descendants<'a>(&'a self, tree: &'a PathTree<T>) -> DepthFirstDescendantsIter<'a, T> {
         match self {
-            Self::Inner(inner) => Box::new(inner.descendants(tree)),
-            Self::Leaf(_) => Box::new(std::iter::empty()),
+            Self::Inner(inner) => inner.descendants(tree),
+            Self::Leaf(_) => DepthFirstDescendantsIter::empty(tree),
         }
     }
 
@@ -126,6 +125,9 @@ where
         }
     }
 
+    /// Edges to children of this node
+    ///
+    /// In arbitrary but stable ordering.
     pub fn children(&self) -> impl Iterator<Item = HalfEdgeRef<'_, T>> + '_ {
         self.children
             .iter()
@@ -135,21 +137,18 @@ where
             })
     }
 
-    fn descendants<'a>(
-        &'a self,
-        tree: &'a PathTree<T>,
-    ) -> impl Iterator<Item = HalfEdgeRef<'a, T>> + 'a {
-        self.children().flat_map(|half_edge_to_child| {
-            // Traversal in depth-first order
-            let grandchildren = tree
-                .lookup_node(half_edge_to_child.node_id)
-                .into_iter()
-                .flat_map(|node| node.node.descendants(tree));
-            std::iter::once(half_edge_to_child).chain(grandchildren)
-        })
+    fn descendants<'a>(&'a self, tree: &'a PathTree<T>) -> DepthFirstDescendantsIter<'a, T> {
+        let mut iter = DepthFirstDescendantsIter::new(tree, DESCENDANTS_ITER_STACK_CAPACITY);
+        iter.push_parent(self);
+        iter
     }
 
+    /// Number of descendants of this node
+    ///
+    /// Recursively counts all descendants of this node.
     pub fn count_descendants<'a>(&'a self, tree: &'a PathTree<T>) -> usize {
+        // This recursive implementation is probably faster than `descendants().count()`.
+        // TODO: Replace by a non-recursive version.
         self.children().fold(
             0,
             |count,
@@ -164,6 +163,64 @@ where
                         .map_or(0, |node| node.node.count_descendants(tree))
             },
         )
+    }
+}
+
+/// Iterator over descendants of a node
+///
+/// Returned by [`Node::descendants()`].
+#[derive(Debug)]
+pub struct DepthFirstDescendantsIter<'a, T>
+where
+    T: PathTreeTypes,
+{
+    tree: &'a PathTree<T>,
+    children_stack: Vec<HalfEdgeRef<'a, T>>,
+}
+
+impl<'a, T> DepthFirstDescendantsIter<'a, T>
+where
+    T: PathTreeTypes,
+{
+    fn new(tree: &'a PathTree<T>, stack_capacity: usize) -> Self {
+        let children_stack = Vec::with_capacity(stack_capacity);
+        Self {
+            tree,
+            children_stack,
+        }
+    }
+
+    fn empty(tree: &'a PathTree<T>) -> Self {
+        Self::new(tree, 0)
+    }
+
+    fn push_parent(&mut self, parent: &'a InnerNode<T>) {
+        let len_before = self.children_stack.len();
+        self.children_stack.extend(parent.children());
+        debug_assert!(self.children_stack.len() >= len_before);
+        // Reverse the order of children so that the first child ends up at the top of the stack.
+        self.children_stack[len_before..].reverse();
+    }
+}
+
+impl<'a, T> Iterator for DepthFirstDescendantsIter<'a, T>
+where
+    T: PathTreeTypes,
+{
+    type Item = HalfEdgeRef<'a, T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let child = self.children_stack.pop()?;
+        let Some(node) = self.tree.lookup_node(child.node_id) else {
+            unreachable!("child node not found: {node_id}", node_id = child.node_id);
+        };
+        match &node.node {
+            Node::Inner(inner) => {
+                self.push_parent(inner);
+            }
+            Node::Leaf(_) => (),
+        }
+        Some(child)
     }
 }
 
