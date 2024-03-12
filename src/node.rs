@@ -70,6 +70,15 @@ impl<T> Node<T>
 where
     T: PathTreeTypes,
 {
+    /// Returns the number of children
+    ///
+    /// Only includes direct children, not grandchildren or other descendants.
+    pub fn number_of_children(&self) -> usize {
+        match self {
+            Self::Inner(inner) => inner.number_of_children(),
+            Self::Leaf(_) => 0,
+        }
+    }
     /// Returns an iterator over all children of this node
     ///
     /// Only includes direct children, not grandchildren or other descendants.
@@ -117,12 +126,19 @@ impl<T> InnerNode<T>
 where
     T: PathTreeTypes,
 {
-    /// Construct an empty inner node with no children
-    pub fn new(value: <T as PathTreeTypes>::InnerValue) -> Self {
+    /// Create an empty inner node with no children
+    pub(crate) fn new(value: <T as PathTreeTypes>::InnerValue) -> Self {
         Self {
             children: new_hash_map(),
             value,
         }
+    }
+
+    /// Return the number of children
+    ///
+    /// Only includes direct children, not grandchildren or other descendants.
+    pub fn number_of_children(&self) -> usize {
+        self.children.size()
     }
 
     /// Edges to children of this node
@@ -231,8 +247,8 @@ pub struct LeafNode<V> {
 }
 
 impl<V> LeafNode<V> {
-    /// Construct a leaf node
-    pub const fn new(value: V) -> Self {
+    /// Create a leaf node
+    pub(crate) const fn new(value: V) -> Self {
         Self { value }
     }
 }
