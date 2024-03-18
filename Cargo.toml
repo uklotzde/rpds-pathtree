@@ -15,8 +15,8 @@ include = ["/src", "/README.md", "/LICENSES"]
 
 [dependencies]
 derive_more = "0.99.17"
-log = "0.4.20"
-thiserror = "1.0.50"
+log = "0.4.21"
+thiserror = "1.0.58"
 
 rpds = "1.1.0"
 
