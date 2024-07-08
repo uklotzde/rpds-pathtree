@@ -14,8 +14,8 @@ edition = "2021"
 include = ["/src", "/README.md", "/LICENSES"]
 
 [dependencies]
-derive_more = "0.99.17"
-log = "0.4.21"
+derive_more = "0.99.18"
+log = "0.4.22"
 thiserror = "1.0.61"
 
 rpds = "1.1.0"
