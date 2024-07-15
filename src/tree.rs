@@ -59,6 +59,7 @@ where
 {
     pub parent_node: Option<Arc<TreeNode<T>>>,
     pub child_node: Arc<TreeNode<T>>,
+    pub replaced_child_node: Option<Arc<TreeNode<T>>>,
 }
 
 /// Return type when removing a node from the tree.
@@ -444,20 +445,23 @@ impl<T: PathTreeTypes> PathTree<T> {
         };
         let Some(parent_node) = parent_node else {
             // Update the root node
+            let old_root_node = self.root_node();
             let new_root_node =
-                self.root_node()
+                old_root_node
                     .try_clone_update_value(new_value)
                     .map_err(
                         |new_value| InsertOrUpdateNodeValueError::ValueTypeMismatch {
                             value: new_value,
                         },
                     )?;
+            let old_root_node = Arc::clone(old_root_node);
             let new_root_node = Arc::new(new_root_node);
             self.nodes
                 .insert_mut(new_root_node.id, Arc::clone(&new_root_node));
             return Ok(ParentChildTreeNode {
                 parent_node: None,
                 child_node: new_root_node,
+                replaced_child_node: Some(old_root_node),
             });
         };
         debug_assert!(matches!(parent_node.node, Node::Inner(_)));
@@ -493,11 +497,12 @@ impl<T: PathTreeTypes> PathTree<T> {
         // The value is consumed at most once in every code path.
         let mut new_value = Some(new_value);
         let path_segment = child_path_segment;
-        let new_child_node = if let Some(child_node) = inner_node
+        let old_child_node = inner_node
             .children
             .get(path_segment)
             .map(|node_id| self.get_node(*node_id))
-        {
+            .cloned();
+        let new_child_node = if let Some(child_node) = &old_child_node {
             log::debug!(
                 "Updating value of existing child node {child_node_id}",
                 child_node_id = child_node.id
@@ -548,6 +553,7 @@ impl<T: PathTreeTypes> PathTree<T> {
         Ok(ParentChildTreeNode {
             parent_node: Some(new_parent_node),
             child_node: new_child_node,
+            replaced_child_node: old_child_node,
         })
     }
 
