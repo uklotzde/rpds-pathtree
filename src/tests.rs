@@ -142,10 +142,9 @@ const _: () = {
 #[test]
 fn single_leaf_node() {
     let mut path_tree = PathTree::new(Default::default(), NodeValue::Leaf(23));
-    let root_node_id = path_tree.root_node_id();
 
-    assert_eq!(1, path_tree.node_count());
-    assert_eq!(Some(0), path_tree.count_descendant_nodes(root_node_id));
+    assert_eq!(1, path_tree.nodes_count());
+    assert_eq!(0, path_tree.descendant_nodes_count(path_tree.root_node()));
     assert_eq!(Some(&23), path_tree.root_node().node.leaf_value());
 
     // Update the root (leaf) node.
@@ -176,8 +175,8 @@ fn single_leaf_node() {
         )
         .is_ok());
 
-    assert_eq!(1, path_tree.node_count());
-    assert_eq!(Some(0), path_tree.count_descendant_nodes(root_node_id));
+    assert_eq!(1, path_tree.nodes_count());
+    assert_eq!(0, path_tree.descendant_nodes_count(path_tree.root_node()));
     assert_eq!(Some(&42), path_tree.root_node().node.leaf_value());
 
     // Inserting a new leaf node with its parent should fail
@@ -199,8 +198,8 @@ fn single_leaf_node() {
         )
         .is_ok());
 
-    assert_eq!(3, path_tree.node_count());
-    assert_eq!(Some(2), path_tree.count_descendant_nodes(root_node_id));
+    assert_eq!(3, path_tree.nodes_count());
+    assert_eq!(2, path_tree.descendant_nodes_count(path_tree.root_node()));
     assert_eq!(Some(&42), path_tree.root_node().node.inner_value());
     assert_eq!(
         Some(&-2),
@@ -224,10 +223,9 @@ fn single_leaf_node() {
 #[allow(clippy::too_many_lines)]
 fn multiple_nodes() {
     let mut path_tree = PathTree::new(Default::default(), NodeValue::Inner(-23));
-    let root_node_id = path_tree.root_node_id();
 
-    assert_eq!(1, path_tree.node_count());
-    assert_eq!(Some(0), path_tree.count_descendant_nodes(root_node_id));
+    assert_eq!(1, path_tree.nodes_count());
+    assert_eq!(0, path_tree.descendant_nodes_count(path_tree.root_node()));
     assert_eq!(Some(&-23), path_tree.root_node().node.inner_value());
 
     // Insert a new leaf node with its parent
@@ -240,8 +238,8 @@ fn multiple_nodes() {
         )
         .is_ok());
 
-    assert_eq!(3, path_tree.node_count());
-    assert_eq!(Some(2), path_tree.count_descendant_nodes(root_node_id));
+    assert_eq!(3, path_tree.nodes_count());
+    assert_eq!(2, path_tree.descendant_nodes_count(path_tree.root_node()));
     assert_eq!(Some(&-23), path_tree.root_node().node.inner_value());
     assert_eq!(
         Some(&-2),
@@ -276,8 +274,8 @@ fn multiple_nodes() {
         )
         .is_ok());
 
-    assert_eq!(3, path_tree.node_count());
-    assert_eq!(Some(2), path_tree.count_descendant_nodes(root_node_id));
+    assert_eq!(3, path_tree.nodes_count());
+    assert_eq!(2, path_tree.descendant_nodes_count(path_tree.root_node()));
     assert_eq!(Some(&-42), path_tree.root_node().node.inner_value());
     assert_eq!(
         Some(&-2),
@@ -315,8 +313,8 @@ fn multiple_nodes() {
         )
         .is_ok());
 
-    assert_eq!(4, path_tree.node_count());
-    assert_eq!(Some(3), path_tree.count_descendant_nodes(root_node_id));
+    assert_eq!(4, path_tree.nodes_count());
+    assert_eq!(3, path_tree.descendant_nodes_count(path_tree.root_node()));
     assert_eq!(Some(&-42), path_tree.root_node().node.inner_value());
     assert_eq!(
         Some(&-2),
@@ -346,64 +344,63 @@ fn multiple_nodes() {
     {
         // Remove subtree "/foo/bar/baz".
         let mut path_tree = path_tree.clone();
-        assert_eq!(4, path_tree.node_count());
+        assert_eq!(4, path_tree.nodes_count());
         let node = path_tree
             .find_node(&SlashPath::new(Cow::Borrowed("/foo/bar/baz")))
             .unwrap();
-        let node_id = node.id;
-        let node_descendant_count = path_tree.count_descendant_nodes(node_id).unwrap();
-        assert_eq!(0, node_descendant_count);
-        let removed_subtree = path_tree.remove_subtree(node_id).unwrap();
+        let descendant_nodes_count = path_tree.descendant_nodes_count(node);
+        assert_eq!(0, descendant_nodes_count);
+        let removed_subtree = path_tree.remove_subtree(&Arc::clone(node)).unwrap();
         debug_assert_eq!(
-            node_descendant_count,
+            descendant_nodes_count,
             removed_subtree.descendant_node_ids.len()
         );
-        assert_eq!(3, path_tree.node_count());
+        assert_eq!(3, path_tree.nodes_count());
     }
 
     {
         // Remove subtree "/foo/bar".
         let mut path_tree = path_tree.clone();
-        assert_eq!(4, path_tree.node_count());
+        assert_eq!(4, path_tree.nodes_count());
         let node = path_tree
             .find_node(&SlashPath::new(Cow::Borrowed("/foo/bar")))
             .unwrap();
-        let node_id = node.id;
-        let node_descendant_count = path_tree.count_descendant_nodes(node_id).unwrap();
-        assert_eq!(1, node_descendant_count);
-        let removed_subtree = path_tree.remove_subtree(node_id).unwrap();
+        let descendant_nodes_count = path_tree.descendant_nodes_count(node);
+        assert_eq!(1, descendant_nodes_count);
+        let removed_subtree = path_tree.remove_subtree(&Arc::clone(node)).unwrap();
         debug_assert_eq!(
-            node_descendant_count,
+            descendant_nodes_count,
             removed_subtree.descendant_node_ids.len()
         );
-        assert_eq!(2, path_tree.node_count());
+        assert_eq!(2, path_tree.nodes_count());
     }
 
     {
         // Remove subtree "/foo".
         let mut path_tree = path_tree.clone();
-        assert_eq!(4, path_tree.node_count());
+        assert_eq!(4, path_tree.nodes_count());
         let node = path_tree
             .find_node(&SlashPath::new(Cow::Borrowed("/foo")))
             .unwrap();
-        let node_id = node.id;
-        let node_descendant_count = path_tree.count_descendant_nodes(node_id).unwrap();
-        assert_eq!(2, node_descendant_count);
-        let removed_subtree = path_tree.remove_subtree(node_id).unwrap();
+        let descendant_nodes_count = path_tree.descendant_nodes_count(node);
+        assert_eq!(2, descendant_nodes_count);
+        let removed_subtree = path_tree.remove_subtree(&Arc::clone(node)).unwrap();
         debug_assert_eq!(
-            node_descendant_count,
+            descendant_nodes_count,
             removed_subtree.descendant_node_ids.len()
         );
         // Only the root node remains.
-        assert_eq!(1, path_tree.node_count());
+        assert_eq!(1, path_tree.nodes_count());
     }
 
     {
         // The root node cannot be removed.
         let mut path_tree = path_tree.clone();
-        assert_eq!(4, path_tree.node_count());
-        assert!(path_tree.remove_subtree(path_tree.root_node_id()).is_none());
-        assert_eq!(4, path_tree.node_count());
+        assert_eq!(4, path_tree.nodes_count());
+        assert!(path_tree
+            .remove_subtree(&Arc::clone(path_tree.root_node()))
+            .is_err());
+        assert_eq!(4, path_tree.nodes_count());
     }
 
     // Transforming an inner node with children into a leaf node should fail.
@@ -415,9 +412,10 @@ fn multiple_nodes() {
             |_| None
         )
         .is_err());
+    let root_node_id = path_tree.root_node_id();
     path_tree.retain_nodes(|node| node.id == root_node_id);
-    assert_eq!(1, path_tree.node_count());
-    assert_eq!(Some(0), path_tree.count_descendant_nodes(root_node_id));
+    assert_eq!(1, path_tree.nodes_count());
+    assert_eq!(0, path_tree.descendant_nodes_count(path_tree.root_node()));
     // Transforming an inner node without children into a leaf node should succeed.
     assert!(path_tree
         .insert_or_update_node_value(
@@ -612,10 +610,9 @@ fn resolve_node_path() {
 #[allow(clippy::too_many_lines)]
 fn update_node_value() {
     let mut path_tree = PathTree::new(Default::default(), NodeValue::Inner(-23));
-    let root_node_id = path_tree.root_node_id();
 
-    assert_eq!(1, path_tree.node_count());
-    assert_eq!(Some(0), path_tree.count_descendant_nodes(root_node_id));
+    assert_eq!(1, path_tree.nodes_count());
+    assert_eq!(0, path_tree.descendant_nodes_count(path_tree.root_node()));
     assert_eq!(Some(&-23), path_tree.root_node().node.inner_value());
 
     // Insert a new leaf node with its parent
@@ -628,8 +625,8 @@ fn update_node_value() {
         )
         .is_ok());
 
-    assert_eq!(3, path_tree.node_count());
-    assert_eq!(Some(2), path_tree.count_descendant_nodes(root_node_id));
+    assert_eq!(3, path_tree.nodes_count());
+    assert_eq!(2, path_tree.descendant_nodes_count(path_tree.root_node()));
     assert!(path_tree
         .find_node(&SlashPath::new(Cow::Borrowed("/foo/bar/baz")))
         .is_none());
@@ -724,7 +721,9 @@ fn update_node_value() {
         .is_err());
 
     // Delete child of inner node.
-    path_tree.remove_subtree(leaf_node_id);
+    path_tree
+        .remove_subtree(&Arc::clone(path_tree.lookup_node(leaf_node_id).unwrap()))
+        .unwrap();
 
     // Transforming an inner node without children into a leaf node should succeed.
     assert_ne!(
