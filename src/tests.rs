@@ -3,7 +3,7 @@
 
 use std::{borrow::Cow, sync::Arc};
 
-use crate::{MatchNodePath, MatchedNodePath, RootPath, SegmentedPath};
+use crate::{MatchNodePath, MatchedNodePath, RemovedSubtree, RootPath, SegmentedPath};
 
 /// A lazy path implementation for testing.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -350,11 +350,13 @@ fn multiple_nodes() {
             .unwrap();
         let descendant_nodes_count = path_tree.descendant_nodes_count(node);
         assert_eq!(0, descendant_nodes_count);
-        let removed_subtree = path_tree.remove_subtree(&Arc::clone(node)).unwrap();
-        debug_assert_eq!(
-            descendant_nodes_count,
-            removed_subtree.descendant_node_ids.len()
-        );
+        let RemovedSubtree {
+            parent_node: _,
+            child_path_segment,
+            removed_subtree,
+        } = path_tree.remove_subtree_by_id(node.id).unwrap();
+        debug_assert_eq!(child_path_segment.as_ref(), "baz");
+        debug_assert_eq!(1 + descendant_nodes_count, removed_subtree.nodes_count());
         assert_eq!(3, path_tree.nodes_count());
     }
 
@@ -367,11 +369,13 @@ fn multiple_nodes() {
             .unwrap();
         let descendant_nodes_count = path_tree.descendant_nodes_count(node);
         assert_eq!(1, descendant_nodes_count);
-        let removed_subtree = path_tree.remove_subtree(&Arc::clone(node)).unwrap();
-        debug_assert_eq!(
-            descendant_nodes_count,
-            removed_subtree.descendant_node_ids.len()
-        );
+        let RemovedSubtree {
+            parent_node: _,
+            child_path_segment,
+            removed_subtree,
+        } = path_tree.remove_subtree_by_id(node.id).unwrap();
+        debug_assert_eq!(child_path_segment.as_ref(), "bar");
+        debug_assert_eq!(1 + descendant_nodes_count, removed_subtree.nodes_count());
         assert_eq!(2, path_tree.nodes_count());
     }
 
@@ -384,11 +388,13 @@ fn multiple_nodes() {
             .unwrap();
         let descendant_nodes_count = path_tree.descendant_nodes_count(node);
         assert_eq!(2, descendant_nodes_count);
-        let removed_subtree = path_tree.remove_subtree(&Arc::clone(node)).unwrap();
-        debug_assert_eq!(
-            descendant_nodes_count,
-            removed_subtree.descendant_node_ids.len()
-        );
+        let RemovedSubtree {
+            parent_node: _,
+            child_path_segment,
+            removed_subtree,
+        } = path_tree.remove_subtree_by_id(node.id).unwrap();
+        debug_assert_eq!(child_path_segment.as_ref(), "foo");
+        debug_assert_eq!(1 + descendant_nodes_count, removed_subtree.nodes_count());
         // Only the root node remains.
         assert_eq!(1, path_tree.nodes_count());
     }
@@ -398,8 +404,8 @@ fn multiple_nodes() {
         let mut path_tree = path_tree.clone();
         assert_eq!(4, path_tree.nodes_count());
         assert!(path_tree
-            .remove_subtree(&Arc::clone(path_tree.root_node()))
-            .is_err());
+            .remove_subtree_by_id(path_tree.root_node_id())
+            .is_none());
         assert_eq!(4, path_tree.nodes_count());
     }
 
@@ -721,9 +727,7 @@ fn update_node_value() {
         .is_err());
 
     // Delete child of inner node.
-    path_tree
-        .remove_subtree(&Arc::clone(path_tree.lookup_node(leaf_node_id).unwrap()))
-        .unwrap();
+    path_tree.remove_subtree_by_id(leaf_node_id).unwrap();
 
     // Transforming an inner node without children into a leaf node should succeed.
     assert_ne!(
