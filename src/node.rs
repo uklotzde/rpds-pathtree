@@ -92,6 +92,16 @@ where
         }
     }
 
+    /// Find a child node by its path segment.
+    ///
+    /// Returns the id of the child node or `None` if not found.
+    pub fn find_child(&self, child_path_segment: &T::PathSegmentRef) -> Option<T::NodeId> {
+        match self {
+            Self::Inner(inner) => inner.find_child(child_path_segment),
+            Self::Leaf(_) => None,
+        }
+    }
+
     pub(crate) fn descendants<'a>(
         &'a self,
         tree: &'a PathTree<T>,
@@ -142,6 +152,13 @@ where
                 path_segment: path_segment.borrow(),
                 node_id: *node_id,
             })
+    }
+
+    /// Find a child node by its path segment.
+    ///
+    /// Returns the id of the child node or `None` if not found.
+    pub fn find_child(&self, child_path_segment: &T::PathSegmentRef) -> Option<T::NodeId> {
+        self.children.get(child_path_segment).copied()
     }
 
     /// Returns the number of children.
