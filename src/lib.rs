@@ -14,10 +14,10 @@ pub use self::path::{PathSegment, PathSegmentRef, RootPath, SegmentedPath};
 
 mod tree;
 pub use self::tree::{
-    AncestorTreeNodeIter, InsertOrUpdateChildNodeValue, InsertOrUpdateNodeValue,
-    InsertOrUpdateNodeValueError, InsertedOrReplacedSubtree, MatchNodePath, MatchedNodePath,
-    NewNodeId, PathTree, PathTreeTypes, RemovedSubtree, ResolvedNodePath, TreeNode,
-    TreeNodeParentChildPathConflict, UpdateNodeValueError,
+    AncestorTreeNodeIter, InsertOrUpdateNodeValueError, InsertedOrReplacedSubtree,
+    InsertedOrUpdatedNode, MatchNodePath, MatchedNodePath, NewNodeId, PathTree, PathTreeTypes,
+    RemovedSubtree, ResolvedNodePath, TreeNode, TreeNodeParentChildPathConflict,
+    UpdateNodeValueError, UpdatedParentNode,
 };
 
 #[cfg(feature = "sync")]
