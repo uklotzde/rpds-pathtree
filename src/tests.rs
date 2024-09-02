@@ -4,7 +4,7 @@
 use std::{borrow::Cow, sync::Arc};
 
 use crate::{
-    InsertedOrUpdatedNode, MatchNodePath, MatchedNodePath, RemovedSubtree, RootPath, SegmentedPath,
+    MatchNodePath, NodeInsertedOrUpdated, NodePathMatched, RootPath, SegmentedPath, SubtreeRemoved,
 };
 
 /// A lazy path implementation for testing.
@@ -352,7 +352,7 @@ fn multiple_nodes() {
             .unwrap();
         let descendant_nodes_count = path_tree.descendant_nodes_count(node);
         assert_eq!(0, descendant_nodes_count);
-        let RemovedSubtree {
+        let SubtreeRemoved {
             parent_node: _,
             child_path_segment,
             removed_subtree,
@@ -374,7 +374,7 @@ fn multiple_nodes() {
             .unwrap();
         let descendant_nodes_count = path_tree.descendant_nodes_count(node);
         assert_eq!(1, descendant_nodes_count);
-        let RemovedSubtree {
+        let SubtreeRemoved {
             parent_node: _,
             child_path_segment,
             removed_subtree,
@@ -396,7 +396,7 @@ fn multiple_nodes() {
             .unwrap();
         let descendant_nodes_count = path_tree.descendant_nodes_count(node);
         assert_eq!(2, descendant_nodes_count);
-        let RemovedSubtree {
+        let SubtreeRemoved {
             parent_node: _,
             child_path_segment,
             removed_subtree,
@@ -484,7 +484,7 @@ fn resolve_node_path() {
 
     for match_node_path in [MatchNodePath::Full, MatchNodePath::PartialOrFull] {
         assert_eq!(
-            MatchedNodePath::Full {
+            NodePathMatched::Full {
                 number_of_segments: 0
             },
             path_tree
@@ -493,7 +493,7 @@ fn resolve_node_path() {
                 .matched_path
         );
         assert_eq!(
-            MatchedNodePath::Full {
+            NodePathMatched::Full {
                 number_of_segments: 1
             },
             path_tree
@@ -502,7 +502,7 @@ fn resolve_node_path() {
                 .matched_path
         );
         assert_eq!(
-            MatchedNodePath::Full {
+            NodePathMatched::Full {
                 number_of_segments: 2
             },
             path_tree
@@ -511,7 +511,7 @@ fn resolve_node_path() {
                 .matched_path
         );
         assert_eq!(
-            MatchedNodePath::Full {
+            NodePathMatched::Full {
                 number_of_segments: 3
             },
             path_tree
@@ -523,7 +523,7 @@ fn resolve_node_path() {
                 .matched_path
         );
         assert_eq!(
-            MatchedNodePath::Full {
+            NodePathMatched::Full {
                 number_of_segments: 3
             },
             path_tree
@@ -535,7 +535,7 @@ fn resolve_node_path() {
                 .matched_path
         );
         assert_eq!(
-            MatchedNodePath::Full {
+            NodePathMatched::Full {
                 number_of_segments: 4
             },
             path_tree
@@ -547,7 +547,7 @@ fn resolve_node_path() {
                 .matched_path
         );
         assert_eq!(
-            MatchedNodePath::Full {
+            NodePathMatched::Full {
                 number_of_segments: 4
             },
             path_tree
@@ -559,7 +559,7 @@ fn resolve_node_path() {
                 .matched_path
         );
         assert_eq!(
-            MatchedNodePath::Full {
+            NodePathMatched::Full {
                 number_of_segments: 5
             },
             path_tree
@@ -571,7 +571,7 @@ fn resolve_node_path() {
                 .matched_path
         );
         assert_eq!(
-            MatchedNodePath::Full {
+            NodePathMatched::Full {
                 number_of_segments: 5
             },
             path_tree
@@ -591,7 +591,7 @@ fn resolve_node_path() {
         )
         .is_none());
     assert_eq!(
-        MatchedNodePath::Partial {
+        NodePathMatched::Partial {
             number_of_matched_segments: 2.try_into().unwrap()
         },
         path_tree
@@ -610,7 +610,7 @@ fn resolve_node_path() {
         )
         .is_none());
     assert_eq!(
-        MatchedNodePath::Partial {
+        NodePathMatched::Partial {
             number_of_matched_segments: 2.try_into().unwrap()
         },
         path_tree
@@ -812,7 +812,7 @@ fn insert_or_update_child_node_value_leaf() {
             .find_node(&SlashPath::new(Cow::Borrowed("/foo")))
             .unwrap(),
     );
-    let InsertedOrUpdatedNode { node: _, parent } = path_tree
+    let NodeInsertedOrUpdated { node: _, parent } = path_tree
         .insert_or_update_child_node_value(&parent_node, "bar2", Some("bar"), NodeValue::Leaf(4))
         .unwrap();
     assert_eq!(4, path_tree.nodes_count().get());
@@ -835,7 +835,7 @@ fn insert_or_update_child_node_value_leaf() {
             .find_node(&SlashPath::new(Cow::Borrowed("/foo")))
             .unwrap(),
     );
-    let InsertedOrUpdatedNode { node: _, parent } = path_tree
+    let NodeInsertedOrUpdated { node: _, parent } = path_tree
         .insert_or_update_child_node_value(&parent_node, "baz", Some("bar2"), NodeValue::Leaf(5))
         .unwrap();
     assert_eq!(3, path_tree.nodes_count().get());
@@ -936,7 +936,7 @@ fn insert_or_update_child_node_value_inner() {
             .find_node(&SlashPath::new(Cow::Borrowed("/foo")))
             .unwrap(),
     );
-    let InsertedOrUpdatedNode { node: _, parent } = path_tree
+    let NodeInsertedOrUpdated { node: _, parent } = path_tree
         .insert_or_update_child_node_value(
             &parent_node,
             "inner2",
@@ -964,7 +964,7 @@ fn insert_or_update_child_node_value_inner() {
             .find_node(&SlashPath::new(Cow::Borrowed("/foo")))
             .unwrap(),
     );
-    let InsertedOrUpdatedNode { node: _, parent } = path_tree
+    let NodeInsertedOrUpdated { node: _, parent } = path_tree
         .insert_or_update_child_node_value(
             &parent_node,
             "bar",
