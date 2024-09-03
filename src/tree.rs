@@ -418,14 +418,15 @@ impl<T: PathTreeTypes> PathTree<T> {
                 inner_node
                     .children
                     .insert_mut(path_segment.to_owned(), child_node_id);
-                // Replace the parent node with the modified one
-                let parent_node = TreeNode {
-                    id: next_parent_node.id,
-                    parent: next_parent_node.parent.clone(),
-                    node: inner_node.into(),
-                };
-                let parent_node_id = parent_node.id;
-                self.nodes.insert_mut(parent_node_id, Arc::new(parent_node));
+                // Replace the parent node with the modified one.
+                update_parent_node(
+                    &mut self.nodes,
+                    TreeNode {
+                        id: next_parent_node.id,
+                        parent: next_parent_node.parent.clone(),
+                        node: inner_node.into(),
+                    },
+                );
                 next_parent_node = new_next_parent_node;
             }
             debug_assert_eq!(
@@ -628,15 +629,14 @@ impl<T: PathTreeTypes> PathTree<T> {
             (new_child_node, Some((inner_node, None)))
         };
         let parent = inner_node_and_removed_subtree.map(|(inner_node, removed_subtree)| {
-            let parent_node = TreeNode {
-                id: parent_node.id,
-                parent: parent_node.parent.clone(),
-                node: Node::Inner(inner_node),
-            };
-            let parent_node_id = parent_node.id;
-            let new_parent_node = Arc::new(parent_node);
-            self.nodes
-                .insert_mut(parent_node_id, Arc::clone(&new_parent_node));
+            let new_parent_node = update_parent_node(
+                &mut self.nodes,
+                TreeNode {
+                    id: parent_node.id,
+                    parent: parent_node.parent.clone(),
+                    node: Node::Inner(inner_node),
+                },
+            );
             ParentNodeUpdated {
                 node: new_parent_node,
                 removed_subtree,
@@ -732,10 +732,7 @@ impl<T: PathTreeTypes> PathTree<T> {
                 node: Node::Inner(inner_node),
             }
         };
-        let parent_node_id = new_parent_node.id;
-        let new_parent_node = Arc::new(new_parent_node);
-        self.nodes
-            .insert_mut(parent_node_id, Arc::clone(&new_parent_node));
+        let new_parent_node = update_parent_node(&mut self.nodes, new_parent_node);
         // The tree is now back in a consistent state and we can use the public API again.
         let nodes_count_after = self.nodes_count();
         debug_assert!(nodes_count_before >= nodes_count_after);
@@ -1127,4 +1124,20 @@ impl<'a, T: PathTreeTypes> Iterator for AncestorTreeNodeIter<'a, T> {
             node,
         })
     }
+}
+
+fn update_parent_node<T: PathTreeTypes>(
+    nodes: &mut HashMap<T::NodeId, Arc<TreeNode<T>>>,
+    parent_node: TreeNode<T>,
+) -> Arc<TreeNode<T>> {
+    debug_assert!(matches!(parent_node.node, Node::Inner(_)));
+    let parent_node_id = parent_node.id;
+    let new_parent_node = Arc::new(parent_node);
+    debug_assert!(nodes.contains_key(&parent_node_id));
+    nodes.insert_mut(parent_node_id, Arc::clone(&new_parent_node));
+    log::debug!(
+        "Updated parent node {new_parent_node:?}",
+        new_parent_node = *new_parent_node,
+    );
+    new_parent_node
 }
