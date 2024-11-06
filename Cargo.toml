@@ -24,6 +24,8 @@ rpds = "1.1.0"
 [features]
 "default" = []
 "sync" = []
+# Enables additional debug assertions that may severely impact the runtime performance.
+"expensive-debug-assertions" = []
 
 [lints.rust]
 future_incompatible = "warn"
