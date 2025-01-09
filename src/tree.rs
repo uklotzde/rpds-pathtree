@@ -274,7 +274,7 @@ impl<T: PathTreeTypes> PathTree<T> {
     #[must_use]
     pub fn contains_node(&self, node: &Arc<TreeNode<T>>) -> bool {
         self.lookup_node(node.id)
-            .map_or(false, |tree_node| Arc::ptr_eq(tree_node, node))
+            .is_some_and(|tree_node| Arc::ptr_eq(tree_node, node))
     }
 
     /// Find a node by its path.
@@ -943,7 +943,7 @@ impl<T: PathTreeTypes> PathTree<T> {
     pub fn ancestor_nodes<'a>(
         &'a self,
         node: &'a Arc<TreeNode<T>>,
-    ) -> impl Iterator<Item = HalfEdgeTreeNode<'_, T>> + Clone {
+    ) -> impl Iterator<Item = HalfEdgeTreeNode<'a, T>> + Clone {
         AncestorTreeNodeIter::new(self, node)
     }
 

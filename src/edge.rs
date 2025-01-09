@@ -50,7 +50,7 @@ pub struct HalfEdge<'a, T: PathTreeTypes> {
     pub node_id: T::NodeId,
 }
 
-impl<'a, T: PathTreeTypes> PartialEq for HalfEdge<'a, T> {
+impl<T: PathTreeTypes> PartialEq for HalfEdge<'_, T> {
     fn eq(&self, other: &Self) -> bool {
         let Self {
             path_segment,
@@ -64,7 +64,7 @@ impl<'a, T: PathTreeTypes> PartialEq for HalfEdge<'a, T> {
     }
 }
 
-impl<'a, T: PathTreeTypes> Eq for HalfEdge<'a, T>
+impl<T: PathTreeTypes> Eq for HalfEdge<'_, T>
 where
     T::NodeId: Eq,
     T::PathSegment: Eq,
