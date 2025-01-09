@@ -16,7 +16,7 @@ include = ["/src", "/README.md", "/LICENSES"]
 
 [dependencies]
 derive_more = { version = "1.0.0", features = ["display", "error"] }
-itertools = "0.13.0"
+itertools = "0.14.0"
 log = "0.4.22"
 
 rpds = "1.1.0"
