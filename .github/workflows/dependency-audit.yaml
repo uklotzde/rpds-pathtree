@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: The rpds-pathtree authors
+# SPDX-License-Identifier: CC0-1.0
+
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow
+
+# Same as file name
+name: dependency-audit
+permissions:
+  contents: read
+on:
+  push:
+    paths:
+      - "**/Cargo.toml"
+  schedule:
+    # Weekly, i.e. on Sunday at 13:37 UTC
+    - cron: "37 13 * * 0"
+  workflow_dispatch:
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check
+          arguments: >-
+            --all-features --locked
