@@ -4,7 +4,7 @@
 [package]
 name = "rpds-pathtree"
 description = "Immutable, path-addressable tree data structure"
-version = "0.13.1"
+version = "0.13.2"
 license = "MPL-2.0"
 readme = "README.md"
 repository = "https://github.com/uklotzde/rpds-pathtree"
