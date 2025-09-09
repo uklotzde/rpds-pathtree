@@ -6,8 +6,8 @@ use std::{borrow::Borrow, fmt, hash::Hash, marker::PhantomData, num::NonZeroUsiz
 use derive_more::{Display, Error};
 
 use crate::{
-    new_hash_map, HalfEdge, HalfEdgeOwned, HalfEdgeTreeNode, HashMap, InnerNode, LeafNode, Node,
-    NodeValue, PathSegment, RootPath, SegmentedPath as _,
+    HalfEdge, HalfEdgeOwned, HalfEdgeTreeNode, HashMap, InnerNode, LeafNode, Node, NodeValue,
+    PathSegment, RootPath, SegmentedPath as _, new_hash_map,
 };
 
 pub trait NewNodeId<T> {
@@ -569,7 +569,9 @@ impl<T: PathTreeTypes> PathTree<T> {
                 let (mut inner_node, removed_subtree) = if let Some(subtree_root_node_id) =
                     parent_node.node.find_child(child_path_segment)
                 {
-                    log::debug!("Removing child node {child_node_id} with subtree from {child_path_segment:?}");
+                    log::debug!(
+                        "Removing child node {child_node_id} with subtree from {child_path_segment:?}"
+                    );
                     let removed_subtree = self.remove_subtree_by_id(subtree_root_node_id);
                     debug_assert!(removed_subtree.is_some());
                     let SubtreeRemoved {
@@ -587,7 +589,9 @@ impl<T: PathTreeTypes> PathTree<T> {
                     (inner_node.clone(), None)
                 };
                 // Move the updated node to the new, empty location.
-                log::debug!("Moving child node {child_node_id} from {old_child_path_segment:?} to {child_path_segment:?}");
+                log::debug!(
+                    "Moving child node {child_node_id} from {old_child_path_segment:?} to {child_path_segment:?}"
+                );
                 inner_node.children.remove_mut(old_child_path_segment);
                 debug_assert!(self.nodes.contains_key(&child_node_id));
                 let child_node_id = updated_child_node.id;
@@ -1050,11 +1054,12 @@ impl<T: PathTreeTypes> TreeNode<T> {
         };
         debug_assert_eq!(self.id, new_node.id);
         debug_assert_eq!(self.node.children_count(), new_node.node.children_count());
-        debug_assert!(self
-            .node
-            .children()
-            .zip(new_node.node.children())
-            .all(|(old, new)| old == new));
+        debug_assert!(
+            self.node
+                .children()
+                .zip(new_node.node.children())
+                .all(|(old, new)| old == new)
+        );
         Ok(new_node)
     }
 }

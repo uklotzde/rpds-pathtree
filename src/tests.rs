@@ -160,55 +160,65 @@ fn single_leaf_node() {
     assert_eq!(Some(&23), path_tree.root_node().node.leaf_value());
 
     // Update the root (leaf) node.
-    assert!(path_tree
-        .insert_or_update_node_value(
-            &SlashPath::ROOT,
-            NodeValue::Leaf(42),
-            &mut Default::default,
-            |_| None
-        )
-        .is_ok());
+    assert!(
+        path_tree
+            .insert_or_update_node_value(
+                &SlashPath::ROOT,
+                NodeValue::Leaf(42),
+                &mut Default::default,
+                |_| None
+            )
+            .is_ok()
+    );
     // Replacing a leaf node with an inner node should succeed.
-    assert!(path_tree
-        .insert_or_update_node_value(
-            &SlashPath::ROOT,
-            NodeValue::Inner(-1),
-            &mut Default::default,
-            |_| None
-        )
-        .is_ok());
+    assert!(
+        path_tree
+            .insert_or_update_node_value(
+                &SlashPath::ROOT,
+                NodeValue::Inner(-1),
+                &mut Default::default,
+                |_| None
+            )
+            .is_ok()
+    );
     // Restore the root (leaf) node.
-    assert!(path_tree
-        .insert_or_update_node_value(
-            &SlashPath::ROOT,
-            NodeValue::Leaf(42),
-            &mut Default::default,
-            |_| None
-        )
-        .is_ok());
+    assert!(
+        path_tree
+            .insert_or_update_node_value(
+                &SlashPath::ROOT,
+                NodeValue::Leaf(42),
+                &mut Default::default,
+                |_| None
+            )
+            .is_ok()
+    );
 
     assert_eq!(1, path_tree.nodes_count().get());
     assert_eq!(0, path_tree.descendant_nodes_count(path_tree.root_node()));
     assert_eq!(Some(&42), path_tree.root_node().node.leaf_value());
 
     // Inserting a new leaf node with its parent should fail
-    assert!(path_tree
-        .insert_or_update_node_value(
-            &SlashPath::new(Cow::Borrowed("/foo/bar")),
-            NodeValue::Leaf(1),
-            &mut || -2, // Creates the parent node "/foo" with value -2
-            |_| None
-        )
-        .is_err());
+    assert!(
+        path_tree
+            .insert_or_update_node_value(
+                &SlashPath::new(Cow::Borrowed("/foo/bar")),
+                NodeValue::Leaf(1),
+                &mut || -2, // Creates the parent node "/foo" with value -2
+                |_| None
+            )
+            .is_err()
+    );
     // Replacing the leaf node with a new inner node should succeed
-    assert!(path_tree
-        .insert_or_update_node_value(
-            &SlashPath::new(Cow::Borrowed("/foo/bar")),
-            NodeValue::Leaf(1),
-            &mut || -2, // Creates the parent node "/foo" with value -2
-            |&leaf_value| leaf_value.try_into().ok()
-        )
-        .is_ok());
+    assert!(
+        path_tree
+            .insert_or_update_node_value(
+                &SlashPath::new(Cow::Borrowed("/foo/bar")),
+                NodeValue::Leaf(1),
+                &mut || -2, // Creates the parent node "/foo" with value -2
+                |&leaf_value| leaf_value.try_into().ok()
+            )
+            .is_ok()
+    );
 
     assert_eq!(3, path_tree.nodes_count().get());
     assert_eq!(2, path_tree.descendant_nodes_count(path_tree.root_node()));
@@ -241,14 +251,16 @@ fn multiple_nodes() {
     assert_eq!(Some(&-23), path_tree.root_node().node.inner_value());
 
     // Insert a new leaf node with its parent
-    assert!(path_tree
-        .insert_or_update_node_value(
-            &SlashPath::new(Cow::Borrowed("/foo/bar")),
-            NodeValue::Leaf(1),
-            &mut || -2, // Creates the parent node "/foo" with value -2
-            |_| None
-        )
-        .is_ok());
+    assert!(
+        path_tree
+            .insert_or_update_node_value(
+                &SlashPath::new(Cow::Borrowed("/foo/bar")),
+                NodeValue::Leaf(1),
+                &mut || -2, // Creates the parent node "/foo" with value -2
+                |_| None
+            )
+            .is_ok()
+    );
 
     assert_eq!(3, path_tree.nodes_count().get());
     assert_eq!(2, path_tree.descendant_nodes_count(path_tree.root_node()));
@@ -269,22 +281,28 @@ fn multiple_nodes() {
             .node
             .leaf_value()
     );
-    assert!(path_tree
-        .find_node(&SlashPath::new(Cow::Borrowed("/bar")))
-        .is_none());
-    assert!(path_tree
-        .find_node(&SlashPath::new(Cow::Borrowed("/foo/bar/baz")))
-        .is_none());
+    assert!(
+        path_tree
+            .find_node(&SlashPath::new(Cow::Borrowed("/bar")))
+            .is_none()
+    );
+    assert!(
+        path_tree
+            .find_node(&SlashPath::new(Cow::Borrowed("/foo/bar/baz")))
+            .is_none()
+    );
 
     // Update the root (inner) node.
-    assert!(path_tree
-        .insert_or_update_node_value(
-            &SlashPath::ROOT,
-            NodeValue::Inner(-42),
-            &mut Default::default,
-            |_| None
-        )
-        .is_ok());
+    assert!(
+        path_tree
+            .insert_or_update_node_value(
+                &SlashPath::ROOT,
+                NodeValue::Inner(-42),
+                &mut Default::default,
+                |_| None
+            )
+            .is_ok()
+    );
 
     assert_eq!(3, path_tree.nodes_count().get());
     assert_eq!(2, path_tree.descendant_nodes_count(path_tree.root_node()));
@@ -307,23 +325,27 @@ fn multiple_nodes() {
     );
 
     // Inserting a new leaf node below a leaf node should fail.
-    assert!(path_tree
-        .insert_or_update_node_value(
-            &SlashPath::new(Cow::Borrowed("/foo/bar/baz")),
-            NodeValue::Leaf(3),
-            &mut || 0,
-            |_| None
-        )
-        .is_err());
+    assert!(
+        path_tree
+            .insert_or_update_node_value(
+                &SlashPath::new(Cow::Borrowed("/foo/bar/baz")),
+                NodeValue::Leaf(3),
+                &mut || 0,
+                |_| None
+            )
+            .is_err()
+    );
     // Replacing the leaf node with a new inner node should succeed.
-    assert!(path_tree
-        .insert_or_update_node_value(
-            &SlashPath::new(Cow::Borrowed("/foo/bar/baz")),
-            NodeValue::Leaf(3),
-            &mut || 0,
-            |&leaf_value| leaf_value.try_into().ok().map(|v: isize| -v)
-        )
-        .is_ok());
+    assert!(
+        path_tree
+            .insert_or_update_node_value(
+                &SlashPath::new(Cow::Borrowed("/foo/bar/baz")),
+                NodeValue::Leaf(3),
+                &mut || 0,
+                |&leaf_value| leaf_value.try_into().ok().map(|v: isize| -v)
+            )
+            .is_ok()
+    );
 
     assert_eq!(4, path_tree.nodes_count().get());
     assert_eq!(3, path_tree.descendant_nodes_count(path_tree.root_node()));
@@ -424,34 +446,40 @@ fn multiple_nodes() {
         // The root node cannot be removed.
         let mut path_tree = path_tree.clone();
         assert_eq!(4, path_tree.nodes_count().get());
-        assert!(path_tree
-            .remove_subtree_by_id(path_tree.root_node_id())
-            .is_none());
+        assert!(
+            path_tree
+                .remove_subtree_by_id(path_tree.root_node_id())
+                .is_none()
+        );
         assert_eq!(4, path_tree.nodes_count().get());
     }
 
     // Transforming an inner node with children into a leaf node should fail.
-    assert!(path_tree
-        .insert_or_update_node_value(
-            &SlashPath::ROOT,
-            NodeValue::Leaf(11),
-            &mut Default::default,
-            |_| None
-        )
-        .is_err());
+    assert!(
+        path_tree
+            .insert_or_update_node_value(
+                &SlashPath::ROOT,
+                NodeValue::Leaf(11),
+                &mut Default::default,
+                |_| None
+            )
+            .is_err()
+    );
     let root_node_id = path_tree.root_node_id();
     path_tree.retain_nodes(|node| node.id == root_node_id);
     assert_eq!(1, path_tree.nodes_count().get());
     assert_eq!(0, path_tree.descendant_nodes_count(path_tree.root_node()));
     // Transforming an inner node without children into a leaf node should succeed.
-    assert!(path_tree
-        .insert_or_update_node_value(
-            &SlashPath::ROOT,
-            NodeValue::Leaf(11),
-            &mut Default::default,
-            |_| None
-        )
-        .is_ok());
+    assert!(
+        path_tree
+            .insert_or_update_node_value(
+                &SlashPath::ROOT,
+                NodeValue::Leaf(11),
+                &mut Default::default,
+                |_| None
+            )
+            .is_ok()
+    );
     assert_eq!(Some(&11), path_tree.root_node().node.leaf_value());
 }
 
@@ -594,12 +622,14 @@ fn resolve_node_path() {
         );
     }
 
-    assert!(path_tree
-        .resolve_node_path(
-            &SlashPath::new(Cow::Borrowed("/one/two/foo")),
-            MatchNodePath::Full
-        )
-        .is_none());
+    assert!(
+        path_tree
+            .resolve_node_path(
+                &SlashPath::new(Cow::Borrowed("/one/two/foo")),
+                MatchNodePath::Full
+            )
+            .is_none()
+    );
     assert_eq!(
         NodePathMatched::Partial {
             number_of_matched_segments: 2.try_into().unwrap()
@@ -613,12 +643,14 @@ fn resolve_node_path() {
             .matched_path
     );
 
-    assert!(path_tree
-        .resolve_node_path(
-            &SlashPath::new(Cow::Borrowed("/one/two/foo/four")),
-            MatchNodePath::Full
-        )
-        .is_none());
+    assert!(
+        path_tree
+            .resolve_node_path(
+                &SlashPath::new(Cow::Borrowed("/one/two/foo/four")),
+                MatchNodePath::Full
+            )
+            .is_none()
+    );
     assert_eq!(
         NodePathMatched::Partial {
             number_of_matched_segments: 2.try_into().unwrap()
@@ -643,20 +675,24 @@ fn update_node_value() {
     assert_eq!(Some(&-23), path_tree.root_node().node.inner_value());
 
     // Insert a new leaf node with its parent
-    assert!(path_tree
-        .insert_or_update_node_value(
-            &SlashPath::new(Cow::Borrowed("/foo/bar")),
-            NodeValue::Leaf(1),
-            &mut || -2, // Creates the parent node "/foo" with value -2
-            |_| None
-        )
-        .is_ok());
+    assert!(
+        path_tree
+            .insert_or_update_node_value(
+                &SlashPath::new(Cow::Borrowed("/foo/bar")),
+                NodeValue::Leaf(1),
+                &mut || -2, // Creates the parent node "/foo" with value -2
+                |_| None
+            )
+            .is_ok()
+    );
 
     assert_eq!(3, path_tree.nodes_count().get());
     assert_eq!(2, path_tree.descendant_nodes_count(path_tree.root_node()));
-    assert!(path_tree
-        .find_node(&SlashPath::new(Cow::Borrowed("/foo/bar/baz")))
-        .is_none());
+    assert!(
+        path_tree
+            .find_node(&SlashPath::new(Cow::Borrowed("/foo/bar/baz")))
+            .is_none()
+    );
 
     let inner_node_id = path_tree
         .find_node(&SlashPath::new(Cow::Borrowed("/foo")))
@@ -676,12 +712,14 @@ fn update_node_value() {
             .node
             .leaf_value()
     );
-    assert!(path_tree
-        .update_node_value(
-            &Arc::clone(path_tree.lookup_node(leaf_node_id).unwrap()),
-            NodeValue::Leaf(2),
-        )
-        .is_ok());
+    assert!(
+        path_tree
+            .update_node_value(
+                &Arc::clone(path_tree.lookup_node(leaf_node_id).unwrap()),
+                NodeValue::Leaf(2),
+            )
+            .is_ok()
+    );
     assert_eq!(
         Some(&2),
         path_tree
@@ -700,12 +738,14 @@ fn update_node_value() {
             .node
             .inner_value()
     );
-    assert!(path_tree
-        .update_node_value(
-            &Arc::clone(path_tree.lookup_node(inner_node_id).unwrap()),
-            NodeValue::Inner(-3),
-        )
-        .is_ok());
+    assert!(
+        path_tree
+            .update_node_value(
+                &Arc::clone(path_tree.lookup_node(inner_node_id).unwrap()),
+                NodeValue::Inner(-3),
+            )
+            .is_ok()
+    );
     assert_eq!(
         Some(&-3),
         path_tree
@@ -724,12 +764,14 @@ fn update_node_value() {
             .node
             .leaf_value()
     );
-    assert!(path_tree
-        .update_node_value(
-            &Arc::clone(path_tree.lookup_node(leaf_node_id).unwrap()),
-            NodeValue::Inner(-4),
-        )
-        .is_ok());
+    assert!(
+        path_tree
+            .update_node_value(
+                &Arc::clone(path_tree.lookup_node(leaf_node_id).unwrap()),
+                NodeValue::Inner(-4),
+            )
+            .is_ok()
+    );
     assert_eq!(
         Some(&-4),
         path_tree
@@ -740,12 +782,14 @@ fn update_node_value() {
     );
 
     // Transforming an inner node with children into a leaf node should fail.
-    assert!(path_tree
-        .update_node_value(
-            &Arc::clone(path_tree.lookup_node(inner_node_id).unwrap()),
-            NodeValue::Leaf(4),
-        )
-        .is_err());
+    assert!(
+        path_tree
+            .update_node_value(
+                &Arc::clone(path_tree.lookup_node(inner_node_id).unwrap()),
+                NodeValue::Leaf(4),
+            )
+            .is_err()
+    );
 
     // Delete child of inner node.
     path_tree.remove_subtree_by_id(leaf_node_id).unwrap();
@@ -759,12 +803,14 @@ fn update_node_value() {
             .node
             .inner_value()
     );
-    assert!(path_tree
-        .update_node_value(
-            &Arc::clone(path_tree.lookup_node(inner_node_id).unwrap()),
-            NodeValue::Leaf(4),
-        )
-        .is_ok());
+    assert!(
+        path_tree
+            .update_node_value(
+                &Arc::clone(path_tree.lookup_node(inner_node_id).unwrap()),
+                NodeValue::Leaf(4),
+            )
+            .is_ok()
+    );
     assert_eq!(
         Some(&4),
         path_tree
@@ -784,22 +830,26 @@ fn insert_or_update_child_node_value_leaf() {
     assert_eq!(0, path_tree.descendant_nodes_count(path_tree.root_node()));
     assert_eq!(Some(&-23), path_tree.root_node().node.inner_value());
 
-    assert!(path_tree
-        .insert_or_update_node_value(
-            &SlashPath::new(Cow::Borrowed("/foo/bar")),
-            NodeValue::Leaf(2),
-            &mut || -1, // Creates the parent node "/foo" with value -1
-            |_| None
-        )
-        .is_ok());
-    assert!(path_tree
-        .insert_or_update_node_value(
-            &SlashPath::new(Cow::Borrowed("/foo/baz")),
-            NodeValue::Leaf(3),
-            &mut || unreachable!(),
-            |_| None
-        )
-        .is_ok());
+    assert!(
+        path_tree
+            .insert_or_update_node_value(
+                &SlashPath::new(Cow::Borrowed("/foo/bar")),
+                NodeValue::Leaf(2),
+                &mut || -1, // Creates the parent node "/foo" with value -1
+                |_| None
+            )
+            .is_ok()
+    );
+    assert!(
+        path_tree
+            .insert_or_update_node_value(
+                &SlashPath::new(Cow::Borrowed("/foo/baz")),
+                NodeValue::Leaf(3),
+                &mut || unreachable!(),
+                |_| None
+            )
+            .is_ok()
+    );
 
     assert_eq!(4, path_tree.nodes_count().get());
 
@@ -895,35 +945,41 @@ fn insert_or_update_child_node_value_inner() {
     assert_eq!(0, path_tree.descendant_nodes_count(path_tree.root_node()));
     assert_eq!(Some(&-23), path_tree.root_node().node.inner_value());
 
-    assert!(path_tree
-        .insert_or_update_node_value(
-            &SlashPath::new(Cow::Borrowed("/foo/inner")),
-            NodeValue::Leaf(2),
-            &mut || -1, // Creates the parent node "/foo" with value -1
-            |_| None
-        )
-        .is_ok());
+    assert!(
+        path_tree
+            .insert_or_update_node_value(
+                &SlashPath::new(Cow::Borrowed("/foo/inner")),
+                NodeValue::Leaf(2),
+                &mut || -1, // Creates the parent node "/foo" with value -1
+                |_| None
+            )
+            .is_ok()
+    );
     //
-    assert!(path_tree
-        .insert_or_update_node_value(
-            &SlashPath::new(Cow::Borrowed("/foo/inner/leaf")),
-            NodeValue::Leaf(42),
-            &mut || unreachable!(),
-            |value| {
-                // Transform the former leaf node into an inner node.
-                assert_eq!(2, *value);
-                Some(-2)
-            }
-        )
-        .is_ok());
-    assert!(path_tree
-        .insert_or_update_node_value(
-            &SlashPath::new(Cow::Borrowed("/foo/bar")),
-            NodeValue::Leaf(3),
-            &mut || unreachable!(),
-            |_| None
-        )
-        .is_ok());
+    assert!(
+        path_tree
+            .insert_or_update_node_value(
+                &SlashPath::new(Cow::Borrowed("/foo/inner/leaf")),
+                NodeValue::Leaf(42),
+                &mut || unreachable!(),
+                |value| {
+                    // Transform the former leaf node into an inner node.
+                    assert_eq!(2, *value);
+                    Some(-2)
+                }
+            )
+            .is_ok()
+    );
+    assert!(
+        path_tree
+            .insert_or_update_node_value(
+                &SlashPath::new(Cow::Borrowed("/foo/bar")),
+                NodeValue::Leaf(3),
+                &mut || unreachable!(),
+                |_| None
+            )
+            .is_ok()
+    );
 
     assert_eq!(5, path_tree.nodes_count().get());
 

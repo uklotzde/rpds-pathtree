@@ -3,7 +3,7 @@
 
 use std::borrow::Borrow as _;
 
-use crate::{new_hash_map, HalfEdge, HashMap, PathTree, PathTreeTypes};
+use crate::{HalfEdge, HashMap, PathTree, PathTreeTypes, new_hash_map};
 
 const DESCENDANTS_ITER_STACK_CAPACITY: usize = 1024;
 
