@@ -119,7 +119,6 @@ impl crate::PathTreeTypes for PathTreeTypes {
     type NewNodeId = NewNodeId;
     type PathSegmentOwned = Cow<'static, str>;
     type PathSegment = str;
-    type RootPath = SlashPath<'static>;
     type InnerValue = isize;
     type LeafValue = usize;
 
@@ -662,6 +661,248 @@ fn resolve_node_path() {
             )
             .unwrap()
             .matched_path
+    );
+}
+
+/// Another root path type that relies on the default implementation of [`RootPath::is_root()`].
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+struct SegmentsPath(Vec<&'static str>);
+
+impl SegmentedPath<str> for SegmentsPath {
+    fn segments(&self) -> Box<dyn Iterator<Item = &str> + '_> {
+        Box::new(self.0.iter().copied())
+    }
+
+    fn parent_child_segments(&self) -> (Box<dyn Iterator<Item = &str> + '_>, Option<&str>) {
+        let (child, parents) = self
+            .0
+            .split_last()
+            .map_or((None, &[][..]), |(child, parents)| (Some(*child), parents));
+        (Box::new(parents.iter().copied()), child)
+    }
+}
+
+impl RootPath<str> for SegmentsPath {}
+
+#[test]
+fn resolve_node_path_with_other_root_path_type() {
+    let mut path_tree = PathTree::new(Default::default(), NodeValue::Inner(0));
+    path_tree
+        .insert_or_update_node_value(
+            &SlashPath::new(Cow::Borrowed("/one/two/three")),
+            NodeValue::Leaf(3),
+            &mut || -1,
+            |_| None,
+        )
+        .unwrap();
+
+    let resolved = path_tree
+        .resolve_node_path(&SegmentsPath(vec![]), MatchNodePath::Full)
+        .unwrap();
+    assert!(Arc::ptr_eq(path_tree.root_node(), resolved.node));
+    assert_eq!(
+        NodePathMatched::Full {
+            number_of_segments: 0
+        },
+        resolved.matched_path
+    );
+
+    let resolved = path_tree
+        .resolve_node_path(
+            &SegmentsPath(vec!["one", "two", "three"]),
+            MatchNodePath::Full,
+        )
+        .unwrap();
+    assert_eq!(Some(&3), resolved.node.node.leaf_value());
+    assert_eq!(
+        NodePathMatched::Full {
+            number_of_segments: 3
+        },
+        resolved.matched_path
+    );
+    assert!(Arc::ptr_eq(
+        path_tree
+            .find_node(&SlashPath::new(Cow::Borrowed("/one/two/three")))
+            .unwrap(),
+        resolved.node
+    ));
+
+    assert!(
+        path_tree
+            .resolve_node_path(&SegmentsPath(vec!["one", "foo"]), MatchNodePath::Full)
+            .is_none()
+    );
+    assert_eq!(
+        NodePathMatched::Partial {
+            number_of_matched_segments: 1.try_into().unwrap()
+        },
+        path_tree
+            .resolve_node_path(
+                &SegmentsPath(vec!["one", "foo"]),
+                MatchNodePath::PartialOrFull
+            )
+            .unwrap()
+            .matched_path
+    );
+}
+
+/// An unsized, relative path that only implements [`SegmentedPath`] but not [`RootPath`].
+impl SegmentedPath<str> for [&str] {
+    fn segments(&self) -> Box<dyn Iterator<Item = &str> + '_> {
+        Box::new(self.iter().map(|segment| -> &str { segment }))
+    }
+
+    fn parent_child_segments(&self) -> (Box<dyn Iterator<Item = &str> + '_>, Option<&str>) {
+        let (child, parents) = self
+            .split_last()
+            .map_or((None, &[][..]), |(child, parents)| (Some(*child), parents));
+        (
+            Box::new(parents.iter().map(|segment| -> &str { segment })),
+            child,
+        )
+    }
+}
+
+#[test]
+#[allow(clippy::too_many_lines)]
+fn resolve_relative_node_path() {
+    let mut path_tree = PathTree::new(Default::default(), NodeValue::Inner(0));
+    path_tree
+        .insert_or_update_node_value(
+            &SlashPath::new(Cow::Borrowed("/one/two/three")),
+            NodeValue::Leaf(3),
+            &mut || -1,
+            |_| None,
+        )
+        .unwrap();
+    path_tree
+        .insert_or_update_node_value(
+            &SlashPath::new(Cow::Borrowed("/one/four")),
+            NodeValue::Leaf(4),
+            &mut || -1,
+            |_| None,
+        )
+        .unwrap();
+    let find = |path: &'static str| {
+        Arc::clone(
+            path_tree
+                .find_node(&SlashPath::new(Cow::Borrowed(path)))
+                .unwrap(),
+        )
+    };
+    let root = Arc::clone(path_tree.root_node());
+    let one = find("/one");
+    let two = find("/one/two");
+    let three = find("/one/two/three");
+    let four = find("/one/four");
+
+    // An empty path resolves to the start node itself.
+    for start_node in [&root, &one, &two, &three, &four] {
+        let resolved = path_tree
+            .resolve_relative_node_path(start_node, &[][..], MatchNodePath::Full)
+            .unwrap();
+        assert!(Arc::ptr_eq(start_node, resolved.node));
+        assert_eq!(
+            NodePathMatched::Full {
+                number_of_segments: 0
+            },
+            resolved.matched_path
+        );
+    }
+
+    // Starting at the root node is equivalent to resolve_node_path().
+    let resolved = path_tree
+        .resolve_relative_node_path(&root, &["one", "two", "three"][..], MatchNodePath::Full)
+        .unwrap();
+    assert!(Arc::ptr_eq(&three, resolved.node));
+    assert_eq!(
+        path_tree
+            .resolve_node_path(
+                &SlashPath::new(Cow::Borrowed("/one/two/three")),
+                MatchNodePath::Full
+            )
+            .unwrap()
+            .matched_path,
+        resolved.matched_path
+    );
+
+    // Matched segments are counted from the start node.
+    let resolved = path_tree
+        .resolve_relative_node_path(&one, &["two", "three"][..], MatchNodePath::Full)
+        .unwrap();
+    assert!(Arc::ptr_eq(&three, resolved.node));
+    assert_eq!(
+        NodePathMatched::Full {
+            number_of_segments: 2
+        },
+        resolved.matched_path
+    );
+    let resolved = path_tree
+        .resolve_relative_node_path(&one, &["four"][..], MatchNodePath::PartialOrFull)
+        .unwrap();
+    assert!(Arc::ptr_eq(&four, resolved.node));
+    assert_eq!(
+        NodePathMatched::Full {
+            number_of_segments: 1
+        },
+        resolved.matched_path
+    );
+
+    // Segments are only resolved downwards, never from the root.
+    assert!(
+        path_tree
+            .resolve_relative_node_path(&two, &["one"][..], MatchNodePath::PartialOrFull)
+            .is_none()
+    );
+    assert!(
+        path_tree
+            .resolve_relative_node_path(&one, &["one", "two"][..], MatchNodePath::Full)
+            .is_none()
+    );
+
+    // Segment mismatch.
+    assert!(
+        path_tree
+            .resolve_relative_node_path(&one, &["two", "foo"][..], MatchNodePath::Full)
+            .is_none()
+    );
+    let resolved = path_tree
+        .resolve_relative_node_path(&one, &["two", "foo"][..], MatchNodePath::PartialOrFull)
+        .unwrap();
+    assert!(Arc::ptr_eq(&two, resolved.node));
+    assert_eq!(
+        NodePathMatched::Partial {
+            number_of_matched_segments: 1.try_into().unwrap()
+        },
+        resolved.matched_path
+    );
+    // A partial match requires at least one matched segment.
+    assert!(
+        path_tree
+            .resolve_relative_node_path(&one, &["foo"][..], MatchNodePath::PartialOrFull)
+            .is_none()
+    );
+
+    // Path continues beyond a leaf node.
+    assert!(
+        path_tree
+            .resolve_relative_node_path(&four, &["foo"][..], MatchNodePath::PartialOrFull)
+            .is_none()
+    );
+    assert!(
+        path_tree
+            .resolve_relative_node_path(&two, &["three", "foo"][..], MatchNodePath::Full)
+            .is_none()
+    );
+    let resolved = path_tree
+        .resolve_relative_node_path(&two, &["three", "foo"][..], MatchNodePath::PartialOrFull)
+        .unwrap();
+    assert!(Arc::ptr_eq(&three, resolved.node));
+    assert_eq!(
+        NodePathMatched::Partial {
+            number_of_matched_segments: 1.try_into().unwrap()
+        },
+        resolved.matched_path
     );
 }
 
