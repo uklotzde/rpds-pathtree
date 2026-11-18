@@ -23,7 +23,7 @@ impl PathSegment for OsStr {
 }
 
 /// Decomposition of a path into segments.
-pub trait SegmentedPath<S: PathSegment + ?Sized>: Clone + Eq + Hash + fmt::Debug {
+pub trait SegmentedPath<S: PathSegment + ?Sized> {
     /// Iterate over all path segments.
     ///
     /// All segments are guaranteed to be non-empty.
@@ -38,9 +38,17 @@ pub trait SegmentedPath<S: PathSegment + ?Sized>: Clone + Eq + Hash + fmt::Debug
     fn parent_child_segments(&self) -> (Box<dyn Iterator<Item = &S> + '_>, Option<&S>);
 }
 
-/// [`SegmentedPath`] with a root element.
+/// [`SegmentedPath`] that is anchored at the root.
+///
+/// Implementing this trait asserts that the [segments](SegmentedPath::segments)
+/// of the path are relative to the root of the tree, i.e. the path is absolute.
+/// The root path itself has no segments.
 pub trait RootPath<S: PathSegment + ?Sized>: SegmentedPath<S> {
     /// Check if the path equals the root path.
+    ///
+    /// The default implementation checks if the path has no segments.
     #[must_use]
-    fn is_root(&self) -> bool;
+    fn is_root(&self) -> bool {
+        self.segments().next().is_none()
+    }
 }

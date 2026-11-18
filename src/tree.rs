@@ -7,7 +7,7 @@ use derive_more::{Display, Error};
 
 use crate::{
     HalfEdge, HalfEdgeOwned, HalfEdgeTreeNode, HashMap, InnerNode, LeafNode, Node, NodeValue,
-    PathSegment, RootPath, SegmentedPath as _, new_hash_map,
+    PathSegment, RootPath, SegmentedPath, new_hash_map,
 };
 
 pub trait NewNodeId<T> {
@@ -22,7 +22,6 @@ pub trait PathTreeTypes: Clone + Default + fmt::Debug {
     type LeafValue: Clone + fmt::Debug;
     type PathSegmentOwned: Clone + Eq + Hash + fmt::Debug + Borrow<Self::PathSegment>;
     type PathSegment: PathSegment + ?Sized;
-    type RootPath: RootPath<Self::PathSegment> + ?Sized;
 
     fn path_segment_to_owned(path_segment: &Self::PathSegment) -> Self::PathSegmentOwned;
 }
@@ -257,7 +256,10 @@ impl<T: PathTreeTypes> PathTree<T> {
     /// Find a node by its path.
     #[must_use]
     #[cfg_attr(debug_assertions, allow(clippy::missing_panics_doc))] // Never panics
-    pub fn find_node(&self, path: &T::RootPath) -> Option<&Arc<TreeNode<T>>> {
+    pub fn find_node<P>(&self, path: &P) -> Option<&Arc<TreeNode<T>>>
+    where
+        P: RootPath<T::PathSegment> + ?Sized,
+    {
         self.resolve_node_path(path, MatchNodePath::Full).map(
             |NodePathResolved { node, matched_path }| {
                 debug_assert_eq!(
@@ -282,14 +284,51 @@ impl<T: PathTreeTypes> PathTree<T> {
     /// Returns the found node and the number of resolved path segments.
     #[must_use]
     #[cfg_attr(debug_assertions, allow(clippy::missing_panics_doc))] // Never panics
-    pub fn resolve_node_path<'a>(
+    pub fn resolve_node_path<'a, P>(
         &'a self,
-        path: &T::RootPath,
+        path: &P,
         match_path: MatchNodePath,
-    ) -> Option<NodePathResolved<'a, T>> {
+    ) -> Option<NodePathResolved<'a, T>>
+    where
+        P: RootPath<T::PathSegment> + ?Sized,
+    {
+        self.resolve_node_path_from(self.root_node(), path, match_path)
+    }
+
+    /// Find a node by its path relative to the given start node.
+    ///
+    /// The segments of `path` are resolved starting at `start_node`,
+    /// which must be a node of this tree. An empty path resolves to
+    /// `start_node` itself.
+    ///
+    /// Returns the found node and the number of resolved path segments,
+    /// counted from `start_node`.
+    #[must_use]
+    #[cfg_attr(debug_assertions, allow(clippy::missing_panics_doc))] // Never panics
+    pub fn resolve_relative_node_path<'a, P>(
+        &'a self,
+        start_node: &'a Arc<TreeNode<T>>,
+        path: &P,
+        match_path: MatchNodePath,
+    ) -> Option<NodePathResolved<'a, T>>
+    where
+        P: SegmentedPath<T::PathSegment> + ?Sized,
+    {
+        debug_assert!(self.contains_node(start_node));
+        self.resolve_node_path_from(start_node, path, match_path)
+    }
+
+    fn resolve_node_path_from<'a, P>(
+        &'a self,
+        start_node: &'a Arc<TreeNode<T>>,
+        path: &P,
+        match_path: MatchNodePath,
+    ) -> Option<NodePathResolved<'a, T>>
+    where
+        P: SegmentedPath<T::PathSegment> + ?Sized,
+    {
         // TODO: Use a trie data structure and Aho-Corasick algo for faster lookup?
-        let root_node = self.get_node(self.root_node_id);
-        let mut last_visited_node = root_node;
+        let mut last_visited_node = start_node;
         let mut number_of_matched_path_segments = 0;
         let mut partial_path_match = false;
         for path_segment in path.segments() {
@@ -358,12 +397,15 @@ impl<T: PathTreeTypes> PathTree<T> {
         })
     }
 
-    fn create_missing_ancestor_nodes<'a>(
+    fn create_missing_ancestor_nodes<'a, P>(
         &mut self,
-        child_path: &'a T::RootPath,
+        child_path: &'a P,
         mut new_inner_value: impl FnMut() -> T::InnerValue,
         try_clone_leaf_into_inner_value: impl FnOnce(&T::LeafValue) -> Option<T::InnerValue>,
-    ) -> Result<TreeNodeParentChildContext<'a, T>, TreeNodeParentChildPathConflict<T>> {
+    ) -> Result<TreeNodeParentChildContext<'a, T>, TreeNodeParentChildPathConflict<T>>
+    where
+        P: RootPath<T::PathSegment> + ?Sized,
+    {
         if child_path.is_root() {
             return Ok(TreeNodeParentChildContext {
                 parent_node: None,
@@ -479,13 +521,16 @@ impl<T: PathTreeTypes> PathTree<T> {
     ///
     /// In case of an error, the new value is returned back to the caller.
     #[allow(clippy::missing_panics_doc)] // Never panics
-    pub fn insert_or_update_node_value(
+    pub fn insert_or_update_node_value<P>(
         &mut self,
-        path: &T::RootPath,
+        path: &P,
         new_value: NodeValue<T>,
         new_inner_value: &mut impl FnMut() -> T::InnerValue,
         try_clone_leaf_into_inner_value: impl FnOnce(&T::LeafValue) -> Option<T::InnerValue>,
-    ) -> Result<NodeInsertedOrUpdated<T>, InsertOrUpdateNodeValueError<T>> {
+    ) -> Result<NodeInsertedOrUpdated<T>, InsertOrUpdateNodeValueError<T>>
+    where
+        P: RootPath<T::PathSegment> + ?Sized,
+    {
         let TreeNodeParentChildContext {
             parent_node,
             child_path_segment,
