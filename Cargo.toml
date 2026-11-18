@@ -16,11 +16,11 @@ rust-version = "1.89"
 include = ["/src", "/README.md", "/LICENSES"]
 
 [dependencies]
-derive_more = { version = "2.0.1", features = ["display", "error"] }
-itertools = "0.14.0"
-log = "0.4.28"
+derive_more = { version = "2.1.1", features = ["display", "error"] }
+itertools = "0.15.0"
+log = "0.4.35"
 
-rpds = "1.1.1"
+rpds = "1.2.1"
 
 [features]
 "default" = []
