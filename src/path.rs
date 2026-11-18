@@ -28,7 +28,6 @@ pub trait SegmentedPath<S: PathSegment + ?Sized>: Clone + Eq + Hash + fmt::Debug
     ///
     /// All segments are guaranteed to be non-empty.
     // TODO: How to avoid boxing the result?
-    #[must_use]
     fn segments(&self) -> Box<dyn Iterator<Item = &S> + '_>;
 
     /// Split the path into parent segments and the last child segment.
@@ -36,7 +35,6 @@ pub trait SegmentedPath<S: PathSegment + ?Sized>: Clone + Eq + Hash + fmt::Debug
     /// The returned iterator excludes the last segment that is
     /// included by [`Self::segments()`].
     // TODO: How to avoid boxing the result?
-    #[must_use]
     fn parent_child_segments(&self) -> (Box<dyn Iterator<Item = &S> + '_>, Option<&S>);
 }
 
